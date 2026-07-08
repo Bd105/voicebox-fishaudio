@@ -382,6 +382,21 @@ def _get_non_qwen_tts_configs() -> list[ModelConfig]:
             ],
         ),
         ModelConfig(
+            model_name="fish-audio-s21-pro-free",
+            display_name="Fish Audio S2.1-Pro Free",
+            engine="fish_audio",
+            hf_repo_id="fish-audio-cloud",
+            model_size="s2.1-pro-free",
+            size_mb=0,
+            supports_instruct=True,
+            is_cloud=True,
+            languages=[
+                "zh", "en", "ja", "ko", "de", "fr", "ru", "pt", "es", "it",
+                "he", "ar", "da", "el", "fi", "hi", "ms", "nl", "no", "pl",
+                "sv", "sw", "tr",
+            ],
+        ),
+        ModelConfig(
             model_name="fish-audio-s2-pro",
             display_name="Fish Audio S2-Pro",
             engine="fish_audio",

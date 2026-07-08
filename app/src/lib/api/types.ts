@@ -70,7 +70,7 @@ export interface GenerationRequest {
   text: string;
   language: LanguageCode;
   seed?: number;
-  model_size?: '1.7B' | '0.6B' | '1B' | '3B' | 's2.1-pro' | 's2-pro' | 's1';
+  model_size?: '1.7B' | '0.6B' | '1B' | '3B' | 's2.1-pro' | 's2.1-pro-free' | 's2-pro' | 's1';
   engine?:
     | 'qwen'
     | 'qwen_custom_voice'

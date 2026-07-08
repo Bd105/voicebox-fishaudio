@@ -16,7 +16,7 @@ const generationSchema = z.object({
   text: z.string().min(1, '').max(50000),
   language: z.enum(LANGUAGE_CODES as [LanguageCode, ...LanguageCode[]]),
   seed: z.number().int().optional(),
-  modelSize: z.enum(['1.7B', '0.6B', '1B', '3B', 's2.1-pro', 's2-pro', 's1']).optional(),
+  modelSize: z.enum(['1.7B', '0.6B', '1B', '3B', 's2.1-pro', 's2.1-pro-free', 's2-pro', 's1']).optional(),
   instruct: z.string().max(500).optional(),
   engine: z
     .enum([
@@ -102,11 +102,13 @@ export function useGenerationForm(options: UseGenerationFormOptions = {}) {
                 : engine === 'kokoro'
                   ? 'kokoro'
                   : engine === 'fish_audio'
-                    ? data.modelSize === 's2-pro'
-                      ? 'fish-audio-s2-pro'
-                      : data.modelSize === 's1'
-                        ? 'fish-audio-s1'
-                        : 'fish-audio-s21-pro'
+                    ? data.modelSize === 's2.1-pro-free'
+                      ? 'fish-audio-s21-pro-free'
+                      : data.modelSize === 's2-pro'
+                        ? 'fish-audio-s2-pro'
+                        : data.modelSize === 's1'
+                          ? 'fish-audio-s1'
+                          : 'fish-audio-s21-pro'
                   : engine === 'qwen_custom_voice'
                     ? `qwen-custom-voice-${data.modelSize}`
                     : `qwen-tts-${data.modelSize}`;
@@ -124,11 +126,13 @@ export function useGenerationForm(options: UseGenerationFormOptions = {}) {
                 : engine === 'kokoro'
                   ? 'Kokoro 82M'
                   : engine === 'fish_audio'
-                    ? data.modelSize === 's2-pro'
-                      ? 'Fish Audio S2-Pro'
-                      : data.modelSize === 's1'
-                        ? 'Fish Audio S1'
-                        : 'Fish Audio S2.1-Pro'
+                    ? data.modelSize === 's2.1-pro-free'
+                      ? 'Fish Audio S2.1-Pro Free'
+                      : data.modelSize === 's2-pro'
+                        ? 'Fish Audio S2-Pro'
+                        : data.modelSize === 's1'
+                          ? 'Fish Audio S1'
+                          : 'Fish Audio S2.1-Pro'
                   : engine === 'qwen_custom_voice'
                     ? data.modelSize === '1.7B'
                       ? 'Qwen CustomVoice 1.7B'

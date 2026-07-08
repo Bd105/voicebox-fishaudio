@@ -24,7 +24,7 @@ from ..services import fish_audio_settings
 logger = logging.getLogger(__name__)
 
 FISH_AUDIO_SAMPLE_RATE = 44100
-FISH_AUDIO_MODELS = ("s2.1-pro", "s2-pro", "s1")
+FISH_AUDIO_MODELS = ("s2.1-pro", "s2.1-pro-free", "s2-pro", "s1")
 DEFAULT_MODEL_SIZE = "s2.1-pro"
 
 

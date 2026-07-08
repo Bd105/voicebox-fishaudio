@@ -28,6 +28,7 @@ const ENGINE_OPTIONS = [
   { value: 'tada:3B', label: 'TADA 3B Multilingual', engine: 'tada' },
   { value: 'kokoro', label: 'Kokoro 82M', engine: 'kokoro' },
   { value: 'fish_audio:s2.1-pro', label: 'Fish Audio S2.1-Pro', engine: 'fish_audio' },
+  { value: 'fish_audio:s2.1-pro-free', label: 'Fish Audio S2.1-Pro Free', engine: 'fish_audio' },
   { value: 'fish_audio:s2-pro', label: 'Fish Audio S2-Pro', engine: 'fish_audio' },
   { value: 'fish_audio:s1', label: 'Fish Audio S1', engine: 'fish_audio' },
 ] as const;
@@ -85,7 +86,7 @@ export function applyEngineSelection(form: UseFormReturn<GenerationFormValues>, 
   } else if (value.startsWith('fish_audio:')) {
     const [, modelSize] = value.split(':');
     form.setValue('engine', 'fish_audio');
-    form.setValue('modelSize', modelSize as 's2.1-pro' | 's2-pro' | 's1');
+    form.setValue('modelSize', modelSize as 's2.1-pro' | 's2.1-pro-free' | 's2-pro' | 's1');
     const currentLang = form.getValues('language');
     const available = getLanguageOptionsForEngine('fish_audio');
     if (!available.some((l) => l.value === currentLang)) {

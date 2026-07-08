@@ -71,6 +71,8 @@ const MODEL_DESCRIPTIONS: Record<string, string> = {
     'Kokoro 82M by hexgrad. Tiny 82M-parameter TTS that runs at CPU realtime. Supports 8 languages with pre-built voice styles. Apache 2.0 licensed.',
   'fish-audio-s21-pro':
     'Fish Audio S2.1-Pro — cloud TTS with 83 languages, natural-language emotion control via bracket tags, and instant voice cloning.',
+  'fish-audio-s21-pro-free':
+    'Fish Audio S2.1-Pro Free — same S2.1-Pro model at $0 for testing and development. No TTFA or DPA guarantees.',
   'fish-audio-s2-pro':
     'Fish Audio S2-Pro — previous-generation cloud TTS with 80+ languages, multi-speaker dialogue, and instant voice cloning.',
   'fish-audio-s1':
