@@ -241,6 +241,7 @@ async def get_model_status():
         use_scan_cache = False
 
     from ..backends import get_all_model_configs, check_model_loaded
+    from ..services import fish_audio_settings
 
     registry_configs = get_all_model_configs()
     model_configs = [
@@ -249,6 +250,7 @@ async def get_model_status():
             "display_name": cfg.display_name,
             "hf_repo_id": cfg.hf_repo_id,
             "model_size": cfg.model_size,
+            "is_cloud": cfg.is_cloud,
             "check_loaded": lambda c=cfg: check_model_loaded(c),
         }
         for cfg in registry_configs
@@ -272,7 +274,10 @@ async def get_model_status():
             size_mb = None
             loaded = False
 
-            if cache_info:
+            if config.get("is_cloud"):
+                downloaded = fish_audio_settings.is_configured()
+                size_mb = 0 if downloaded else None
+            elif cache_info:
                 repo_id = config["hf_repo_id"]
                 for repo in cache_info.repos:
                     if repo.repo_id == repo_id:
@@ -304,7 +309,7 @@ async def get_model_status():
                                 pass
                         break
 
-            if not downloaded:
+            if not downloaded and not config.get("is_cloud"):
                 try:
                     cache_dir = hf_constants.HF_HUB_CACHE
                     repo_cache = Path(cache_dir) / ("models--" + config["hf_repo_id"].replace("/", "--"))
@@ -344,7 +349,11 @@ async def get_model_status():
             except Exception:
                 loaded = False
 
-            is_downloading = config["hf_repo_id"] in active_download_repos
+            is_downloading = (
+                config["model_name"] in active_download_names
+                if config.get("is_cloud")
+                else config["hf_repo_id"] in active_download_repos
+            )
 
             if is_downloading:
                 downloaded = False
@@ -355,6 +364,7 @@ async def get_model_status():
                     model_name=config["model_name"],
                     display_name=config["display_name"],
                     hf_repo_id=config["hf_repo_id"],
+                    is_cloud=config.get("is_cloud", False),
                     downloaded=downloaded,
                     downloading=is_downloading,
                     size_mb=size_mb,
@@ -367,16 +377,22 @@ async def get_model_status():
             except Exception:
                 loaded = False
 
-            is_downloading = config["hf_repo_id"] in active_download_repos
+            is_downloading = (
+                config["model_name"] in active_download_names
+                if config.get("is_cloud")
+                else config["hf_repo_id"] in active_download_repos
+            )
+            cloud_ready = config.get("is_cloud") and fish_audio_settings.is_configured()
 
             statuses.append(
                 models.ModelStatus(
                     model_name=config["model_name"],
                     display_name=config["display_name"],
                     hf_repo_id=config["hf_repo_id"],
-                    downloaded=False,
+                    is_cloud=config.get("is_cloud", False),
+                    downloaded=cloud_ready,
                     downloading=is_downloading,
-                    size_mb=None,
+                    size_mb=0 if cloud_ready else None,
                     loaded=loaded,
                 )
             )
@@ -413,7 +429,11 @@ async def trigger_model_download(request: models.ModelDownloadRequest):
         model_name=request.model_name,
         current=0,
         total=0,
-        filename="Connecting to HuggingFace...",
+        filename=(
+            "Verifying Fish Audio API key..."
+            if config.is_cloud
+            else "Connecting to HuggingFace..."
+        ),
         status="downloading",
     )
 

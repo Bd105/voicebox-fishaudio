@@ -53,6 +53,9 @@ import type {
   MCPClientBindingUpsert,
   CloudLoginStartResponse,
   CloudStatus,
+  FishAudioSettings,
+  FishAudioSettingsUpdate,
+  FishAudioVerifyResponse,
 } from './types';
 
 function formatErrorDetail(detail: unknown, fallback: string): string {
@@ -954,6 +957,30 @@ class ApiClient {
 
   async disconnectCloud(): Promise<CloudStatus> {
     return this.request<CloudStatus>('/cloud/disconnect', { method: 'POST' });
+  }
+
+  async getFishAudioSettings(): Promise<FishAudioSettings> {
+    return this.request<FishAudioSettings>('/settings/fish-audio');
+  }
+
+  async updateFishAudioSettings(patch: FishAudioSettingsUpdate): Promise<FishAudioSettings> {
+    return this.request<FishAudioSettings>('/settings/fish-audio', {
+      method: 'PUT',
+      body: JSON.stringify(patch),
+    });
+  }
+
+  async verifyFishAudioKey(patch?: FishAudioSettingsUpdate): Promise<FishAudioVerifyResponse> {
+    return this.request<FishAudioVerifyResponse>('/settings/fish-audio/verify', {
+      method: 'POST',
+      body: JSON.stringify(patch ?? {}),
+    });
+  }
+
+  async clearFishAudioSettings(): Promise<FishAudioSettings> {
+    return this.request<FishAudioSettings>('/settings/fish-audio', {
+      method: 'DELETE',
+    });
   }
 }
 

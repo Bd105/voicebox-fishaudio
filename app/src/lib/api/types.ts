@@ -70,7 +70,7 @@ export interface GenerationRequest {
   text: string;
   language: LanguageCode;
   seed?: number;
-  model_size?: '1.7B' | '0.6B' | '1B' | '3B';
+  model_size?: '1.7B' | '0.6B' | '1B' | '3B' | 's2.1-pro' | 's2-pro' | 's1';
   engine?:
     | 'qwen'
     | 'qwen_custom_voice'
@@ -78,7 +78,8 @@ export interface GenerationRequest {
     | 'chatterbox'
     | 'chatterbox_turbo'
     | 'tada'
-    | 'kokoro';
+    | 'kokoro'
+    | 'fish_audio';
   instruct?: string;
   /** When true and the profile has a personality prompt, input text is rewritten in-character before TTS. */
   personality?: boolean;
@@ -327,6 +328,7 @@ export interface ModelStatus {
   model_name: string;
   display_name: string;
   hf_repo_id?: string; // HuggingFace repository ID
+  is_cloud?: boolean;
   downloaded: boolean;
   downloading: boolean; // True if download is in progress
   size_mb?: number;
@@ -556,4 +558,21 @@ export interface CloudStatus {
   key_prefix: string | null;
   connected_at: string | null;
   dashboard_url: string;
+}
+
+export interface FishAudioSettings {
+  configured: boolean;
+  key_prefix: string | null;
+  source: string | null;
+  api_keys_url: string;
+  updated_at: string | null;
+}
+
+export interface FishAudioSettingsUpdate {
+  api_key: string;
+}
+
+export interface FishAudioVerifyResponse {
+  valid: boolean;
+  credit?: number | null;
 }

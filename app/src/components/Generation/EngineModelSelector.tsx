@@ -27,6 +27,9 @@ const ENGINE_OPTIONS = [
   { value: 'tada:1B', label: 'TADA 1B', engine: 'tada' },
   { value: 'tada:3B', label: 'TADA 3B Multilingual', engine: 'tada' },
   { value: 'kokoro', label: 'Kokoro 82M', engine: 'kokoro' },
+  { value: 'fish_audio:s2.1-pro', label: 'Fish Audio S2.1-Pro', engine: 'fish_audio' },
+  { value: 'fish_audio:s2-pro', label: 'Fish Audio S2-Pro', engine: 'fish_audio' },
+  { value: 'fish_audio:s1', label: 'Fish Audio S1', engine: 'fish_audio' },
 ] as const;
 
 const ENGINE_DESCRIPTIONS: Record<string, string> = {
@@ -37,13 +40,14 @@ const ENGINE_DESCRIPTIONS: Record<string, string> = {
   chatterbox_turbo: 'English, [laugh] [cough] tags',
   tada: 'HumeAI, 700s+ coherent audio',
   kokoro: '82M params, CPU realtime, 8 langs',
+  fish_audio: 'Cloud API, 80+ langs, bracket emotions',
 };
 
 /** Engines that only support English and should force language to 'en' on select. */
 const ENGLISH_ONLY_ENGINES = new Set(['luxtts', 'chatterbox_turbo']);
 
 /** Engines that support cloned (reference audio) profiles. */
-const CLONING_ENGINES = new Set(['qwen', 'luxtts', 'chatterbox', 'chatterbox_turbo', 'tada']);
+const CLONING_ENGINES = new Set(['qwen', 'luxtts', 'chatterbox', 'chatterbox_turbo', 'tada', 'fish_audio']);
 
 function getAvailableOptions(selectedProfile?: VoiceProfileResponse | null) {
   if (!selectedProfile) return ENGINE_OPTIONS;
@@ -54,6 +58,7 @@ function getSelectValue(engine: string, modelSize?: string): string {
   if (engine === 'qwen') return `qwen:${modelSize || '1.7B'}`;
   if (engine === 'qwen_custom_voice') return `qwen_custom_voice:${modelSize || '1.7B'}`;
   if (engine === 'tada') return `tada:${modelSize || '1B'}`;
+  if (engine === 'fish_audio') return `fish_audio:${modelSize || 's2.1-pro'}`;
   return engine;
 }
 
@@ -74,6 +79,15 @@ export function applyEngineSelection(form: UseFormReturn<GenerationFormValues>, 
     // Validate language is supported by Qwen
     const currentLang = form.getValues('language');
     const available = getLanguageOptionsForEngine('qwen');
+    if (!available.some((l) => l.value === currentLang)) {
+      form.setValue('language', available[0]?.value ?? 'en');
+    }
+  } else if (value.startsWith('fish_audio:')) {
+    const [, modelSize] = value.split(':');
+    form.setValue('engine', 'fish_audio');
+    form.setValue('modelSize', modelSize as 's2.1-pro' | 's2-pro' | 's1');
+    const currentLang = form.getValues('language');
+    const available = getLanguageOptionsForEngine('fish_audio');
     if (!available.some((l) => l.value === currentLang)) {
       form.setValue('language', available[0]?.value ?? 'en');
     }

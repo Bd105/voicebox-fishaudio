@@ -83,9 +83,9 @@ class GenerationRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=50000)
     language: str = Field(default="en", pattern="^(zh|en|ja|ko|de|fr|ru|pt|es|it|he|ar|da|el|fi|hi|ms|nl|no|pl|sv|sw|tr)$")
     seed: Optional[int] = Field(None, ge=0)
-    model_size: Optional[str] = Field(default="1.7B", pattern="^(1\\.7B|0\\.6B|1B|3B)$")
+    model_size: Optional[str] = Field(default="1.7B", pattern="^(1\\.7B|0\\.6B|1B|3B|s2\\.1-pro|s2-pro|s1)$")
     instruct: Optional[str] = Field(None, max_length=500)
-    engine: Optional[str] = Field(default="qwen", pattern="^(qwen|qwen_custom_voice|luxtts|chatterbox|chatterbox_turbo|tada|kokoro)$")
+    engine: Optional[str] = Field(default="qwen", pattern="^(qwen|qwen_custom_voice|luxtts|chatterbox|chatterbox_turbo|tada|kokoro|fish_audio)$")
     personality: bool = Field(
         default=False,
         description="When true and the profile has a personality prompt, the input text is rewritten in-character before TTS.",
@@ -317,7 +317,7 @@ class MCPClientBindingResponse(BaseModel):
     profile_id: Optional[str] = None
     default_engine: Optional[str] = Field(
         None,
-        pattern="^(qwen|qwen_custom_voice|luxtts|chatterbox|chatterbox_turbo|tada|kokoro)$",
+        pattern="^(qwen|qwen_custom_voice|luxtts|chatterbox|chatterbox_turbo|tada|kokoro|fish_audio)$",
     )
     default_personality: bool = False
     last_seen_at: Optional[datetime] = None
@@ -336,7 +336,7 @@ class MCPClientBindingUpsert(BaseModel):
     profile_id: Optional[str] = None
     default_engine: Optional[str] = Field(
         None,
-        pattern="^(qwen|qwen_custom_voice|luxtts|chatterbox|chatterbox_turbo|tada|kokoro)$",
+        pattern="^(qwen|qwen_custom_voice|luxtts|chatterbox|chatterbox_turbo|tada|kokoro|fish_audio)$",
     )
     default_personality: bool = False
 
@@ -355,7 +355,7 @@ class SpeakRequest(BaseModel):
     )
     engine: Optional[str] = Field(
         None,
-        pattern="^(qwen|qwen_custom_voice|luxtts|chatterbox|chatterbox_turbo|tada|kokoro)$",
+        pattern="^(qwen|qwen_custom_voice|luxtts|chatterbox|chatterbox_turbo|tada|kokoro|fish_audio)$",
     )
     personality: Optional[bool] = Field(
         None,
@@ -471,6 +471,7 @@ class ModelStatus(BaseModel):
     model_name: str
     display_name: str
     hf_repo_id: Optional[str] = None  # HuggingFace repository ID
+    is_cloud: bool = False
     downloaded: bool
     downloading: bool = False  # True if download is in progress
     size_mb: Optional[float] = None
@@ -815,3 +816,32 @@ class CloudStatusResponse(BaseModel):
     key_prefix: Optional[str] = None
     connected_at: Optional[datetime] = None
     dashboard_url: str
+
+
+class FishAudioSettingsResponse(BaseModel):
+    """Fish Audio cloud API configuration."""
+
+    configured: bool
+    key_prefix: Optional[str] = None
+    source: Optional[str] = None
+    api_keys_url: str
+    updated_at: Optional[datetime] = None
+
+
+class FishAudioSettingsUpdate(BaseModel):
+    """Update Fish Audio API key."""
+
+    api_key: str = Field(..., min_length=1)
+
+
+class FishAudioVerifyRequest(BaseModel):
+    """Optional API key to verify; omit to verify the stored key."""
+
+    api_key: Optional[str] = None
+
+
+class FishAudioVerifyResponse(BaseModel):
+    """Result of verifying a Fish Audio API key."""
+
+    valid: bool
+    credit: Optional[float] = None
