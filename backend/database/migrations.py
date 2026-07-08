@@ -43,6 +43,7 @@ def run_migrations(engine) -> None:
     _migrate_generation_versions(engine, inspector, tables)
     _migrate_capture_settings(engine, inspector, tables)
     _migrate_mcp_bindings(engine, inspector, tables)
+    _migrate_fish_audio_settings(engine, inspector, tables)
     _normalize_storage_paths(engine, tables)
 
 
@@ -290,6 +291,22 @@ def _supports_drop_column(engine) -> bool:
     if engine.dialect.name != "sqlite":
         return True
     return tuple(int(p) for p in sqlite3.sqlite_version.split(".")[:3]) >= (3, 35, 0)
+
+
+def _migrate_fish_audio_settings(engine, inspector, tables: set[str]) -> None:
+    if "fish_audio_settings" in tables:
+        return
+
+    logger.info("Creating fish_audio_settings table")
+    with engine.connect() as conn:
+        conn.execute(text("""
+            CREATE TABLE fish_audio_settings (
+                id INTEGER PRIMARY KEY,
+                api_key VARCHAR,
+                updated_at DATETIME
+            )
+        """))
+        conn.commit()
 
 
 def _normalize_storage_paths(engine, tables: set[str]) -> None:

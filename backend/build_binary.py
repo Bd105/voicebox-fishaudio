@@ -305,6 +305,13 @@ def build_server(cuda=False, rocm=False):
             "unidic_lite",
             "--hidden-import",
             "loguru",
+            # Fish Audio cloud TTS — lightweight HTTP SDK, no local weights
+            "--hidden-import",
+            "backend.backends.fish_audio_backend",
+            "--hidden-import",
+            "fishaudio",
+            "--copy-metadata",
+            "fish-audio-sdk",
             # MCP server — Streamable-HTTP endpoint and the 4 voicebox.* tools.
             # FastMCP pulls in a chain of deps (mcp, cyclopts, openapi-pydantic,
             # etc.) that don't auto-discover cleanly under PyInstaller, so we

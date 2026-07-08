@@ -58,6 +58,7 @@ class ModelConfig:
     needs_trim: bool = False
     supports_instruct: bool = False
     languages: list[str] = field(default_factory=lambda: ["en"])
+    is_cloud: bool = False
 
 
 @runtime_checkable
@@ -215,6 +216,7 @@ TTS_ENGINES = {
     "chatterbox_turbo": "Chatterbox Turbo",
     "tada": "TADA",
     "kokoro": "Kokoro",
+    "fish_audio": "Fish Audio",
 }
 
 LLM_ENGINES = {
@@ -363,6 +365,64 @@ def _get_non_qwen_tts_configs() -> list[ModelConfig]:
             hf_repo_id="hexgrad/Kokoro-82M",
             size_mb=350,
             languages=["en", "es", "fr", "hi", "it", "pt", "ja", "zh"],
+        ),
+        ModelConfig(
+            model_name="fish-audio-s21-pro",
+            display_name="Fish Audio S2.1-Pro",
+            engine="fish_audio",
+            hf_repo_id="fish-audio-cloud",
+            model_size="s2.1-pro",
+            size_mb=0,
+            supports_instruct=True,
+            is_cloud=True,
+            languages=[
+                "zh", "en", "ja", "ko", "de", "fr", "ru", "pt", "es", "it",
+                "he", "ar", "da", "el", "fi", "hi", "ms", "nl", "no", "pl",
+                "sv", "sw", "tr",
+            ],
+        ),
+        ModelConfig(
+            model_name="fish-audio-s21-pro-free",
+            display_name="Fish Audio S2.1-Pro Free",
+            engine="fish_audio",
+            hf_repo_id="fish-audio-cloud",
+            model_size="s2.1-pro-free",
+            size_mb=0,
+            supports_instruct=True,
+            is_cloud=True,
+            languages=[
+                "zh", "en", "ja", "ko", "de", "fr", "ru", "pt", "es", "it",
+                "he", "ar", "da", "el", "fi", "hi", "ms", "nl", "no", "pl",
+                "sv", "sw", "tr",
+            ],
+        ),
+        ModelConfig(
+            model_name="fish-audio-s2-pro",
+            display_name="Fish Audio S2-Pro",
+            engine="fish_audio",
+            hf_repo_id="fish-audio-cloud",
+            model_size="s2-pro",
+            size_mb=0,
+            supports_instruct=True,
+            is_cloud=True,
+            languages=[
+                "zh", "en", "ja", "ko", "de", "fr", "ru", "pt", "es", "it",
+                "he", "ar", "da", "el", "fi", "hi", "ms", "nl", "no", "pl",
+                "sv", "sw", "tr",
+            ],
+        ),
+        ModelConfig(
+            model_name="fish-audio-s1",
+            display_name="Fish Audio S1",
+            engine="fish_audio",
+            hf_repo_id="fish-audio-cloud",
+            model_size="s1",
+            size_mb=0,
+            supports_instruct=True,
+            is_cloud=True,
+            languages=[
+                "zh", "en", "ja", "ko", "de", "fr", "ru", "pt", "es", "it",
+            ],
         ),
     ]
 
@@ -517,6 +577,8 @@ async def load_engine_model(engine: str, model_size: str = "default") -> None:
         await backend.load_model_async(model_size)
     elif engine == "tada":
         await backend.load_model(model_size)
+    elif engine == "fish_audio":
+        await backend.load_model(model_size)
     else:
         await backend.load_model()
 
@@ -532,8 +594,13 @@ async def ensure_model_cached_or_raise(engine: str, model_size: str = "default")
             cfg = c
             break
 
-    if engine in ("qwen", "qwen_custom_voice", "tada"):
+    if engine in ("qwen", "qwen_custom_voice", "tada", "fish_audio"):
         if not backend._is_model_cached(model_size):
+            if engine == "fish_audio":
+                raise HTTPException(
+                    status_code=400,
+                    detail="Fish Audio API key is not configured. Add your key in Settings → Models.",
+                )
             raise HTTPException(
                 status_code=400,
                 detail=f"Model {model_size} is not downloaded yet. Use /generate to trigger a download.",
@@ -616,6 +683,11 @@ def check_model_loaded(config: ModelConfig) -> bool:
             loaded_size = getattr(backend, "_current_model_size", None) or getattr(backend, "model_size", None)
             return backend.is_loaded() and loaded_size == config.model_size
 
+        if config.engine == "fish_audio":
+            backend = get_tts_backend_for_engine(config.engine)
+            loaded_size = getattr(backend, "model_size", None)
+            return backend.is_loaded() and loaded_size == config.model_size
+
         backend = get_tts_backend_for_engine(config.engine)
         return backend.is_loaded()
     except Exception:
@@ -634,6 +706,9 @@ def get_model_load_func(config: ModelConfig):
         return lambda: tts.get_tts_model().load_model(config.model_size)
 
     if config.engine == "qwen_custom_voice":
+        return lambda: get_tts_backend_for_engine(config.engine).load_model(config.model_size)
+
+    if config.engine == "fish_audio":
         return lambda: get_tts_backend_for_engine(config.engine).load_model(config.model_size)
 
     if config.engine == "qwen_llm":
@@ -708,6 +783,10 @@ def get_tts_backend_for_engine(engine: str) -> TTSBackend:
             from .qwen_custom_voice_backend import QwenCustomVoiceBackend
 
             backend = QwenCustomVoiceBackend()
+        elif engine == "fish_audio":
+            from .fish_audio_backend import FishAudioBackend
+
+            backend = FishAudioBackend()
         else:
             raise ValueError(f"Unknown TTS engine: {engine}. Supported: {list(TTS_ENGINES.keys())}")
 

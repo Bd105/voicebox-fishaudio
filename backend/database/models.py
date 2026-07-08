@@ -234,6 +234,21 @@ class GenerationSettings(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class FishAudioSettings(Base):
+    """Singleton row holding the Fish Audio cloud API key.
+
+    Populated via Settings → Models. The key is a bearer credential for
+    api.fish.audio. ``id`` is always 1; a null ``api_key`` means not configured
+    (unless FISH_API_KEY is set in the environment).
+    """
+
+    __tablename__ = "fish_audio_settings"
+
+    id = Column(Integer, primary_key=True, default=1)
+    api_key = Column(String, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class CloudSettings(Base):
     """Singleton row holding the link to a Voicebox Cloud account.
 

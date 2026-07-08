@@ -69,6 +69,14 @@ const MODEL_DESCRIPTIONS: Record<string, string> = {
     'HumeAI TADA 3B Multilingual — built on Llama 3.2 3B. Supports 10 languages with high-fidelity voice cloning via text-acoustic dual alignment.',
   kokoro:
     'Kokoro 82M by hexgrad. Tiny 82M-parameter TTS that runs at CPU realtime. Supports 8 languages with pre-built voice styles. Apache 2.0 licensed.',
+  'fish-audio-s21-pro':
+    'Fish Audio S2.1-Pro — cloud TTS with 83 languages, natural-language emotion control via bracket tags, and instant voice cloning.',
+  'fish-audio-s21-pro-free':
+    'Fish Audio S2.1-Pro Free — same S2.1-Pro model at $0 for testing and development. No TTFA or DPA guarantees.',
+  'fish-audio-s2-pro':
+    'Fish Audio S2-Pro — previous-generation cloud TTS with 80+ languages, multi-speaker dialogue, and instant voice cloning.',
+  'fish-audio-s1':
+    'Fish Audio S1 — cloud TTS with 13 languages and 64+ parenthesis-style emotion expressions.',
   'qwen-custom-voice-1.7B':
     'Qwen3-TTS CustomVoice 1.7B by Alibaba. 9 premium preset voices with instruct-based style control for tone, emotion, and prosody. Supports 10 languages.',
   'qwen-custom-voice-0.6B':
@@ -180,7 +188,7 @@ export function ModelManagement() {
   const { data: hfModelInfo, isLoading: hfLoading } = useQuery({
     queryKey: ['hfModelInfo', selectedModel?.hf_repo_id],
     queryFn: () => fetchHuggingFaceModelInfo(selectedModel!.hf_repo_id!),
-    enabled: detailOpen && !!selectedModel?.hf_repo_id,
+    enabled: detailOpen && !!selectedModel?.hf_repo_id && !selectedModel?.is_cloud,
     staleTime: 1000 * 60 * 30, // Cache for 30 minutes
     retry: 1,
   });
@@ -386,7 +394,8 @@ export function ModelManagement() {
     },
   });
 
-  const formatSize = (sizeMb?: number): string => {
+  const formatSize = (sizeMb?: number, isCloud?: boolean): string => {
+    if (isCloud) return 'Cloud API';
     if (!sizeMb) return t('models.unknownSize');
     if (sizeMb < 1024) return `${sizeMb.toFixed(1)} MB`;
     return `${(sizeMb / 1024).toFixed(2)} GB`;
@@ -414,7 +423,8 @@ export function ModelManagement() {
         m.model_name.startsWith('luxtts') ||
         m.model_name.startsWith('chatterbox') ||
         m.model_name.startsWith('tada') ||
-        m.model_name.startsWith('kokoro'),
+        m.model_name.startsWith('kokoro') ||
+        m.model_name.startsWith('fish-audio'),
     ) ?? [];
   const whisperModels = modelStatus?.models.filter((m) => m.model_name.startsWith('whisper')) ?? [];
   const llmModels = modelStatus?.models.filter((m) => m.model_name.startsWith('qwen3-')) ?? [];
@@ -596,8 +606,13 @@ export function ModelManagement() {
                         )}
                         {model.downloaded && !isDownloading && !hasError && (
                           <span className="text-xs text-muted-foreground">
-                            {formatSize(model.size_mb)}
+                            {formatSize(model.size_mb, model.is_cloud)}
                           </span>
+                        )}
+                        {!model.downloaded && model.is_cloud && !isDownloading && !hasError && (
+                          <Badge variant="outline" className="text-[10px] h-5">
+                            API key required
+                          </Badge>
                         )}
 
                         <ChevronRight className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
@@ -885,28 +900,30 @@ export function ModelManagement() {
                             : t('models.actions.unload')}
                         </Button>
                       )}
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          setModelToDelete({
-                            name: freshSelectedModel.model_name,
-                            displayName: freshSelectedModel.display_name,
-                            sizeMb: freshSelectedModel.size_mb,
-                          });
-                          setDeleteDialogOpen(true);
-                        }}
-                        variant="outline"
-                        disabled={freshSelectedModel.loaded}
-                        title={
-                          freshSelectedModel.loaded
-                            ? t('models.actions.unloadFirst')
-                            : t('models.actions.deleteModel')
-                        }
-                        className="flex-1"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        {t('models.actions.deleteModel')}
-                      </Button>
+                      {!freshSelectedModel.is_cloud && (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            setModelToDelete({
+                              name: freshSelectedModel.model_name,
+                              displayName: freshSelectedModel.display_name,
+                              sizeMb: freshSelectedModel.size_mb,
+                            });
+                            setDeleteDialogOpen(true);
+                          }}
+                          variant="outline"
+                          disabled={freshSelectedModel.loaded}
+                          title={
+                            freshSelectedModel.loaded
+                              ? t('models.actions.unloadFirst')
+                              : t('models.actions.deleteModel')
+                          }
+                          className="flex-1"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          {t('models.actions.deleteModel')}
+                        </Button>
+                      )}
                     </div>
                   ) : (
                     <Button
@@ -915,7 +932,7 @@ export function ModelManagement() {
                       className="flex-1"
                     >
                       <Download className="h-4 w-4 mr-2" />
-                      {t('models.actions.download')}
+                      {freshSelectedModel.is_cloud ? 'Verify connection' : t('models.actions.download')}
                     </Button>
                   )}
                 </div>
