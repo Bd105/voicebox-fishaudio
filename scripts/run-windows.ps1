@@ -18,8 +18,19 @@ try {
 
   Set-Location $Root
 
-  if (-not (Get-Command "bun" -ErrorAction SilentlyContinue)) {
-    throw "Bun not found. Install Bun from https://bun.sh"
+  function Find-BunPath {
+    $cmd = Get-Command "bun" -ErrorAction SilentlyContinue
+    if ($cmd -and $cmd.Source) { return $cmd.Source }
+
+    $candidates = @(
+      (Join-Path $env:USERPROFILE ".bun\bin\bun.exe"),
+      (Join-Path $env:LOCALAPPDATA "bun\bin\bun.exe"),
+      (Join-Path $env:ProgramFiles "bun\bin\bun.exe")
+    )
+    foreach ($path in $candidates) {
+      if ($path -and (Test-Path $path)) { return $path }
+    }
+    return $null
   }
 
   function Get-LastExit {
@@ -27,10 +38,19 @@ try {
     return 0
   }
 
+  $BunExe = Find-BunPath
+  if (-not $BunExe) {
+    throw "Bun not found. Run install.bat first (it can install Bun automatically), or install from https://bun.sh and open a new terminal."
+  }
+  $bunDir = Split-Path -Parent $BunExe
+  if ($env:Path -notlike ("*" + $bunDir + "*")) {
+    $env:Path = $bunDir + ";" + $env:Path
+  }
+
   $python = Join-Path $Root "backend\venv\Scripts\python.exe"
 
   Write-Host "Preparing Tauri dev sidecars..."
-  & bun run setup:dev
+  & $BunExe run setup:dev
   $code = Get-LastExit
   if ($code -ne 0) { throw "setup:dev failed (exit $code)" }
 
@@ -49,7 +69,7 @@ try {
   Write-Host "Starting Tauri desktop app..."
   try {
     Set-Location (Join-Path $Root "tauri")
-    & bun run tauri dev
+    & $BunExe run tauri dev
     exit (Get-LastExit)
   } finally {
     if ($null -ne $backendJob) {
