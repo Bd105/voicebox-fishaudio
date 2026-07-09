@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Voicebox Windows run — mirrors `just dev` without requiring just.
+  Voicebox Windows run - mirrors just dev without requiring just.
 #>
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
@@ -58,6 +58,6 @@ try {
   }
 } catch {
   Write-Host ""
-  Write-Host "ERROR: $($_.Exception.Message)" -ForegroundColor Red
+  Write-Host ("ERROR: " + $_.Exception.Message) -ForegroundColor Red
   exit 1
 }

@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Voicebox Windows install — mirrors `just setup` without requiring just.
+  Voicebox Windows install - mirrors just setup without requiring just.
 #>
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
@@ -58,7 +58,7 @@ try {
         continue
       }
     }
-    throw "Python 3.11+ not found. Install from https://www.python.org/downloads/ and enable 'Add python.exe to PATH'."
+    throw "Python 3.11+ not found. Install from https://www.python.org/downloads/ and enable Add python.exe to PATH."
   }
 
   function Get-LastExit {
@@ -76,7 +76,9 @@ try {
   Assert-Command "git" "Install Git from https://git-scm.com/download/win"
 
   $py = Resolve-Python
-  Write-Host "Using Python $($py.Version) via '$($py.Cmd) $($py.Args -join ' ')'"
+  $pyLabel = $py.Cmd
+  if ($py.Args.Count -gt 0) { $pyLabel = "$($py.Cmd) $($py.Args -join ' ')" }
+  Write-Host "Using Python $($py.Version) via $pyLabel"
   Write-Host ""
 
   $venvDir = Join-Path $Root "backend\venv"
@@ -105,23 +107,27 @@ try {
   } catch {
     Write-Host "Could not query GPUs ($($_.Exception.Message)); assuming CPU."
   }
-  Write-Host ("Detected GPUs: " + ($(if ($gpus.Count) { $gpus -join ", " } else { "(none)" })))
+  if ($gpus.Count -gt 0) {
+    Write-Host ("Detected GPUs: " + ($gpus -join ", "))
+  } else {
+    Write-Host "Detected GPUs: (none)"
+  }
 
   $hasNvidia = @($gpus | Where-Object { $_ -match "NVIDIA" }).Count -gt 0
   $hasIntelArc = @($gpus | Where-Object { $_ -match "Arc" }).Count -gt 0
 
   if ($hasNvidia) {
-    Write-Host "NVIDIA GPU detected — installing PyTorch with CUDA support..."
+    Write-Host "NVIDIA GPU detected - installing PyTorch with CUDA support..."
     & $venvPython -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
     Assert-Ok "CUDA PyTorch install"
   } elseif ($hasIntelArc) {
-    Write-Host "Intel Arc GPU detected — installing PyTorch with XPU support..."
+    Write-Host "Intel Arc GPU detected - installing PyTorch with XPU support..."
     & $venvPython -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/xpu
     Assert-Ok "XPU PyTorch install"
     & $venvPython -m pip install intel-extension-for-pytorch --index-url https://download.pytorch.org/whl/xpu
     Assert-Ok "intel-extension-for-pytorch install"
   } else {
-    Write-Host "No NVIDIA or Intel Arc GPU detected — CPU PyTorch will come from requirements.txt."
+    Write-Host "No NVIDIA or Intel Arc GPU detected - CPU PyTorch will come from requirements.txt."
   }
 
   Write-Host "Installing Python dependencies from backend\requirements.txt..."
@@ -158,7 +164,7 @@ try {
   exit 0
 } catch {
   Write-Host ""
-  Write-Host "ERROR: $($_.Exception.Message)" -ForegroundColor Red
+  Write-Host ("ERROR: " + $_.Exception.Message) -ForegroundColor Red
   if ($_.ScriptStackTrace) {
     Write-Host $_.ScriptStackTrace -ForegroundColor DarkGray
   }
