@@ -24,6 +24,73 @@ try {
   Write-Host "Repo: $Root"
   Write-Host ""
 
+  function Get-LastExit {
+    if (Test-Path variable:LASTEXITCODE) { return $LASTEXITCODE }
+    return 0
+  }
+
+  function Assert-Ok {
+    param([string]$Label)
+    $code = Get-LastExit
+    if ($code -ne 0) { throw "$Label failed (exit $code)" }
+  }
+
+  function Find-BunPath {
+    $cmd = Get-Command "bun" -ErrorAction SilentlyContinue
+    if ($cmd -and $cmd.Source) { return $cmd.Source }
+
+    $candidates = @(
+      (Join-Path $env:USERPROFILE ".bun\bin\bun.exe"),
+      (Join-Path $env:LOCALAPPDATA "bun\bin\bun.exe"),
+      (Join-Path $env:ProgramFiles "bun\bin\bun.exe"),
+      (Join-Path ${env:ProgramFiles(x86)} "bun\bin\bun.exe")
+    )
+    foreach ($path in $candidates) {
+      if ($path -and (Test-Path $path)) { return $path }
+    }
+    return $null
+  }
+
+  function Ensure-Bun {
+    $bunPath = Find-BunPath
+    if ($bunPath) {
+      $bunDir = Split-Path -Parent $bunPath
+      if ($env:Path -notlike ("*" + $bunDir + "*")) {
+        $env:Path = $bunDir + ";" + $env:Path
+      }
+      Write-Host ("Found Bun: " + $bunPath)
+      return $bunPath
+    }
+
+    Write-Host "Bun not found. Installing Bun from https://bun.sh ..."
+    Write-Host "(This downloads and installs Bun for the current user.)"
+    try {
+      # Official Windows installer from bun.sh
+      Invoke-RestMethod -Uri "https://bun.sh/install.ps1" | Invoke-Expression
+    } catch {
+      throw ("Automatic Bun install failed: " + $_.Exception.Message + ". Install manually from https://bun.sh then re-run install.bat.")
+    }
+
+    # Installer typically puts bun in %USERPROFILE%\.bun\bin
+    $bunHome = Join-Path $env:USERPROFILE ".bun\bin"
+    if (Test-Path $bunHome) {
+      $env:Path = $bunHome + ";" + $env:Path
+    }
+    # Also refresh from Machine/User PATH in case installer updated it
+    $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
+    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+    if ($machinePath -or $userPath) {
+      $env:Path = (@($machinePath, $userPath) | Where-Object { $_ }) -join ";"
+    }
+
+    $bunPath = Find-BunPath
+    if (-not $bunPath) {
+      throw "Bun was installed but bun.exe was not found. Close this window, open a new terminal, and re-run install.bat. Or install from https://bun.sh"
+    }
+    Write-Host ("Installed Bun: " + $bunPath)
+    return $bunPath
+  }
+
   function Assert-Command {
     param([string]$Name, [string]$Hint)
     if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
@@ -61,19 +128,8 @@ try {
     throw "Python 3.11+ not found. Install from https://www.python.org/downloads/ and enable Add python.exe to PATH."
   }
 
-  function Get-LastExit {
-    if (Test-Path variable:LASTEXITCODE) { return $LASTEXITCODE }
-    return 0
-  }
-
-  function Assert-Ok {
-    param([string]$Label)
-    $code = Get-LastExit
-    if ($code -ne 0) { throw "$Label failed (exit $code)" }
-  }
-
-  Assert-Command "bun" "Install Bun from https://bun.sh"
   Assert-Command "git" "Install Git from https://git-scm.com/download/win"
+  $BunExe = Ensure-Bun
 
   $py = Resolve-Python
   $pyLabel = $py.Cmd
@@ -146,7 +202,7 @@ try {
   Assert-Ok "dev tooling install"
 
   Write-Host "Installing JavaScript dependencies (bun install)..."
-  & bun install
+  & $BunExe install
   Assert-Ok "bun install"
 
   Write-Host "Preparing Tauri dev sidecars..."
@@ -154,7 +210,7 @@ try {
     Write-Host "Warning: rustc not found. Sidecar placeholders may use a fallback triple."
     Write-Host "Install Rust from https://rustup.rs for full Tauri desktop builds."
   }
-  & bun run setup:dev
+  & $BunExe run setup:dev
   Assert-Ok "setup:dev"
 
   Write-Host ""
