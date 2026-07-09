@@ -188,8 +188,32 @@ try {
 
   Write-Host "Installing Python dependencies from backend\requirements.txt..."
   Write-Host "(This can take several minutes.)"
-  & $venvPython -m pip install -r (Join-Path $Root "backend\requirements.txt")
-  Assert-Ok "requirements.txt install"
+  # misaki[ja] depends on pyopenjtalk, which has no official Windows wheels and
+  # requires MSVC to compile. Use a prebuilt drop-in wheel instead, and install
+  # misaki without the [ja] extra so pip does not try to build from source.
+  $reqSrc = Join-Path $Root "backend\requirements.txt"
+  $reqWin = Join-Path $env:TEMP ("voicebox-requirements-win-" + [guid]::NewGuid().ToString() + ".txt")
+  $lines = Get-Content -Path $reqSrc
+  $out = New-Object System.Collections.Generic.List[string]
+  foreach ($line in $lines) {
+    if ($line -match '^\s*misaki\[en,ja,zh\]') {
+      $out.Add('misaki[en,zh]>=0.9.4')
+      $out.Add('fugashi')
+      $out.Add('jaconv')
+      $out.Add('mojimoji')
+      $out.Add('lemon-pyopenjtalk-prebuilt')
+    } else {
+      $out.Add($line)
+    }
+  }
+  Set-Content -Path $reqWin -Value $out -Encoding ASCII
+  try {
+    Write-Host "Using Windows-friendly requirements (prebuilt OpenJTalk for Kokoro Japanese)."
+    & $venvPython -m pip install --prefer-binary -r $reqWin
+    Assert-Ok "requirements.txt install"
+  } finally {
+    Remove-Item -Force $reqWin -ErrorAction SilentlyContinue
+  }
 
   Write-Host "Installing engine packages..."
   & $venvPython -m pip install --no-deps chatterbox-tts
